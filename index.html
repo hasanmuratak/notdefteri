@@ -67,7 +67,7 @@
     }
 
         .notKarti button {
-            background: red;
+            background: #ff0000;
             color: white;
             border: none;
             padding: 5px 10px;
@@ -80,59 +80,164 @@
             padding-left: 0;
             list-style-type: none;
         }
+        .arkaplan{
+            background-color: white;
+        }
+        /* Toggle switch stilleri */
+        .switch {
+        position: relative;
+        display: inline-block;
+        width: 50px;
+        height: 26px;
+        }
+
+        .switch input {
+        opacity: 0;
+        width: 0;
+        height: 0;
+        }
+
+        .slider {
+        position: absolute;
+        cursor: pointer;
+        background-color: #ccc;
+        border-radius: 34px;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        transition: .4s;
+        }
+
+        .slider:before {
+        position: absolute;
+        content: "";
+        height: 20px;
+        width: 20px;
+        left: 3px;
+        bottom: 3px;
+        background-color: white;
+        border-radius: 50%;
+        transition: .4s;
+        }
+
+        /* Açıkken */
+        input:checked + .slider {
+        background-color: #2196F3;
+        }
+
+        input:checked + .slider:before {
+        transform: translateX(24px);
+        }
+
     </style>
 </head>
 <body>
+   <div id="arkaplan1" class="arkaplan">
     <h2 class="baslik">Not Defteri</h2>
 
     <div class="ort">
         <textarea id="noteInput" rows="4" placeholder="Notunu yaz..."></textarea>
         <button onclick="saveNote()">Kaydet</button>
+        <label class="switch">
+             <input type="checkbox" onchange="renkdegistirme(this.checked)">
+            <span class="slider"></span>
+        </label>
     </div>
 
     <div class="notKutulari">
         <h3>Kaydedilen Notlar:</h3>
         <ul id="noteList"></ul>
     </div>
+</div>
+    
 
     <script>
         function saveNote() {
-            const input = document.getElementById("noteInput");
-            const text = input.value.trim();
-            if (text === "") return;
+        const input = document.getElementById("noteInput");
+        const text = input.value.trim();
+        if (text === "") return;
 
-            let notlar = JSON.parse(localStorage.getItem("notlar")) || [];
-            notlar.push(text);
-            localStorage.setItem("notlar", JSON.stringify(notlar));
+        const now = new Date();
+        const tarihStr = now.toLocaleDateString("tr-TR");
+        const saatStr = now.toLocaleTimeString("tr-TR", { hour: '2-digit', minute: '2-digit' });
 
-            input.value = "";
-            listeyiGuncelle();
-        }
+        // ID alma: localStorage'dan önceki id'yi çek, yoksa sıfırdan başlat
+        let sonId = parseInt(localStorage.getItem("sonId")) || 0;
+        sonId++;
+        localStorage.setItem("sonId", sonId); // yeni id'yi kaydet
+
+        let notlar = JSON.parse(localStorage.getItem("notlar")) || [];
+        notlar.push({
+            text: text,
+            tarih: tarihStr,
+            saat: saatStr,
+            id: sonId,
+        });
+
+    localStorage.setItem("notlar", JSON.stringify(notlar));
+    input.value = "";
+    listeyiGuncelle();
+}
+
 
         function deleteNote(text) {
             let notlar = JSON.parse(localStorage.getItem("notlar")) || [];
-            notlar = notlar.filter(item => item !== text);
+            notlar = notlar.filter(item => item.text !== text);
             localStorage.setItem("notlar", JSON.stringify(notlar));
             listeyiGuncelle();
         }
 
         function listeyiGuncelle() {
-            const liste = document.getElementById("noteList");
-            liste.innerHTML = "";
-            const notlar = JSON.parse(localStorage.getItem("notlar")) || [];
+        const liste = document.getElementById("noteList");
+        liste.innerHTML = "";
+        let notlar = JSON.parse(localStorage.getItem("notlar")) || [];
 
-            notlar.forEach(text => {
-                const li = document.createElement("li");
-                li.innerHTML = `
-                    <div class="notKarti">
-                        ${text}
-                        <button onclick="deleteNote('${text}')">❌</button>
-                    </div>`;
-                liste.appendChild(li);
+        // Sıralama: id'ye göre büyükten küçüğe
+        notlar.sort((a, b) => b.id - a.id);
+
+        notlar.forEach(item => {
+            const li = document.createElement("li");
+            li.innerHTML = `
+                <div class="notKarti">
+                    <div>
+                        <small>${item.tarih} - ${item.saat}</small><br>
+                        ${item.text}
+                    </div>
+                    <button onclick="deleteNote('${item.text}')">❌</button>
+                </div>`;
+            liste.appendChild(li);
+        });
+    }
+
+        
+        function renkdegistirme(aktifMi){
+           if(aktifMi) {
+            document.body.style.backgroundColor = "#1e1e1e";
+            document.body.style.color = "white";
+            document.getElementById("arkaplan1").style.backgroundColor = "#313131";
+            document.querySelectorAll(".notKarti").forEach(el => {
+                el.style.backgroundColor = "#444";
+                el.style.color = "white";    
             });
+           }
+           else {
+             document.body.style.backgroundColor = "#f2f2f2";
+            document.body.style.color = "black";
+            document.getElementById("arkaplan1").style.backgroundColor = "white";
+            document.querySelectorAll(".notKarti").forEach(el => {
+            el.style.backgroundColor = "rgb(224, 176, 86)";
+            el.style.color = "black";
+                });
+
+
+           }
         }
 
         window.onload = function () {
+            let notlar = JSON.parse(localStorage.getItem("notlar")) || [];
+            notlar = notlar.filter(item => typeof item === "object" && item.text && item.tarih);
+            localStorage.setItem("notlar", JSON.stringify(notlar));
             listeyiGuncelle();
         };
     </script>
